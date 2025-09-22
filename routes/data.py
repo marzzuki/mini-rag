@@ -23,7 +23,7 @@ async def upload(
             status_code=status.HTTP_400_BAD_REQUEST, content={"message": message}
         )
 
-    file_path = file_controller.generate_unique_filename(
+    file_path, file_id = file_controller.generate_unique_filename(
         orig_file_name=file.filename, project_id=project_id
     )
 
@@ -38,4 +38,9 @@ async def upload(
             content={"message": ResponseMessage.FILE_UPLOAD_FAILED},
         )
 
-    return JSONResponse(content={"message": ResponseMessage.FILE_UPLOAD_SUCCESS.value})
+    return JSONResponse(
+        content={
+            "message": ResponseMessage.FILE_UPLOAD_SUCCESS.value,
+            "file_id": file_id,
+        }
+    )
