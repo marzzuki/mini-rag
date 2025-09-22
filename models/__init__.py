@@ -1,1 +1,2 @@
-from .enums.ResponseEnum import ResponseMessage
+from .enums.ProcessingEnum import ProcessingEnum
+from .enums.ResponseEnum import ResponseMessageEnum

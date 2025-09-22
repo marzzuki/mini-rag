@@ -1,8 +1,10 @@
+import os
+import re
+
+from models import ResponseMessageEnum
+
 from .BaseController import BaseController
 from .ProjectController import ProjectController
-from models import ResponseMessage
-import re
-import os
 
 
 class FileController(BaseController):
@@ -12,12 +14,12 @@ class FileController(BaseController):
 
     def validate_uploaded_file(self, file: str):
         if file.content_type not in self.app_settings.FILE_ALLOWED_EXTENSIONS:
-            return False, ResponseMessage.FILE_TYPE_NOT_SUPPORTED.value
+            return False, ResponseMessageEnum.FILE_TYPE_NOT_SUPPORTED.value
 
         if file.size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
-            return False, ResponseMessage.FILE_SIZE_EXCEEDED.value
+            return False, ResponseMessageEnum.FILE_SIZE_EXCEEDED.value
 
-        return True, ResponseMessage.FILE_VALIDATED_SUCCESS.value
+        return True, ResponseMessageEnum.FILE_VALIDATED_SUCCESS.value
 
     def get_clean_file_name(self, orig_file_name: str):
         return re.sub(r"[^\w.]", "", orig_file_name.strip()).replace(" ", "_")
