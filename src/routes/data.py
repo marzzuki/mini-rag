@@ -3,13 +3,13 @@ from contextlib import contextmanager
 from curses import meta
 
 import aiofiles
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, Request, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from controllers import FileController, ProcessController
 from helpers.config import Settings, get_settings
-from models import ResponseMessageEnum
+from models import ProjectModel, ResponseMessageEnum
 
 from .schemas import ProcessRequest
 
@@ -19,9 +19,15 @@ data_router = APIRouter(prefix="/api/v1/data", tags=["api_v1", "data"])
 
 
 @data_router.post("/upload/{project_id}")
-async def upload(
-    project_id: str, file: UploadFile, app_settings: Settings = Depends(get_settings)
+async def upload_data(
+    request: Request,
+    project_id: str,
+    file: UploadFile,
+    app_settings: Settings = Depends(get_settings),
 ):
+    project_model = ProjectModel(db_client=request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+
     file_controller = FileController()
     is_valid, message = file_controller.validate_uploaded_file(file)
 
@@ -49,6 +55,7 @@ async def upload(
         content={
             "message": ResponseMessageEnum.FILE_UPLOAD_SUCCESS.value,
             "file_id": file_id,
+            "project_id": str(project.id),
         }
     )
 

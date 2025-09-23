@@ -12,4 +12,4 @@ class DataChunk(BaseModel):
     chunk_project_id: ObjectId
 
     class Config:
-        arbitary_types_allowed = True
+        arbitrary_types_allowed = True
