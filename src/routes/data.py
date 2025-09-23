@@ -55,7 +55,6 @@ async def upload_data(
         content={
             "message": ResponseMessageEnum.FILE_UPLOAD_SUCCESS.value,
             "file_id": file_id,
-            "project_id": str(project.id),
         }
     )
 
