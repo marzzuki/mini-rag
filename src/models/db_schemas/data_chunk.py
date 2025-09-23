@@ -1,8 +1,7 @@
 from typing import Optional
 
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DataChunk(BaseModel):

@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 
 from controllers import FileController, ProcessController
 from helpers.config import Settings, get_settings
-from models import ProjectModel, ResponseMessageEnum
+from models import ChunkModel, ProjectModel, ResponseMessageEnum
+from models.db_schemas import DataChunk
 
 from .schemas import ProcessRequest
 
@@ -60,11 +61,17 @@ async def upload_data(
 
 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(project_id: str, process_request: ProcessRequest):
+async def process_endpoint(
+    request: Request, project_id: str, process_request: ProcessRequest
+):
     file_id = process_request.file_id
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
     is_reset = process_request.is_reset
+
+    project_model = ProjectModel(db_client=request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    chunk_model = ChunkModel(db_client=request.app.db_client)
 
     process_controller = ProcessController(project_id=project_id)
     file_content = process_controller.get_file_content(file_id=file_id)
@@ -80,9 +87,23 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
             content={"message": ResponseMessageEnum.FILE_PROCESS_FAILED.value},
         )
 
+    file_chunks_records = [
+        DataChunk(
+            chunk_text=chunk.page_content,
+            chunk_metadata=chunk.metadata,
+            chunk_order=i + 1,
+            chunk_project_id=project.id,
+        )
+        for i, chunk in enumerate(file_chunks)
+    ]
+    if is_reset:
+        await chunk_model.delete_chunks_by_project_id(project_id=project.id)
+
+    total_chunks = await chunk_model.insert_many_chunks(chunks=file_chunks_records)
+
     return JSONResponse(
         content={
-            "file_chunks": jsonable_encoder(file_chunks),
+            "total_chunks": total_chunks,
             "message": ResponseMessageEnum.FILE_PROCESS_SUCCESS.value,
         },
     )

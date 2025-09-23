@@ -1,7 +1,8 @@
+import math
+
 from .BaseDataModel import BaseDataModel
 from .db_schemas import Project
 from .enums.DataBaseEnum import DataBaseEnum
-import math
 
 
 class ProjectModel(BaseDataModel):
