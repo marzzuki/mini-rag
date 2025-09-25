@@ -1,10 +1,7 @@
 import logging
-from contextlib import contextmanager
-from curses import meta
 
 import aiofiles
 from fastapi import APIRouter, Depends, Request, UploadFile, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from controllers import FileController, ProcessController
@@ -26,8 +23,8 @@ async def upload_data(
     file: UploadFile,
     app_settings: Settings = Depends(get_settings),
 ):
-    project_model = ProjectModel(db_client=request.app.db_client)
-    project = await project_model.get_project_or_create_one(project_id=project_id)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
+    await project_model.get_project_or_create_one(project_id=project_id)
 
     file_controller = FileController()
     is_valid, message = file_controller.validate_uploaded_file(file)
@@ -36,7 +33,6 @@ async def upload_data(
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST, content={"message": message}
         )
-
     file_path, file_id = file_controller.generate_unique_filename(
         orig_file_name=file.filename, project_id=project_id
     )
@@ -69,9 +65,9 @@ async def process_endpoint(
     overlap_size = process_request.overlap_size
     is_reset = process_request.is_reset
 
-    project_model = ProjectModel(db_client=request.app.db_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
-    chunk_model = ChunkModel(db_client=request.app.db_client)
+    chunk_model = await ChunkModel.create_instance(db_client=request.app.db_client)
 
     process_controller = ProcessController(project_id=project_id)
     file_content = process_controller.get_file_content(file_id=file_id)
