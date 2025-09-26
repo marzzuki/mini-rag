@@ -1,4 +1,5 @@
 import logging
+import os
 
 import aiofiles
 from fastapi import APIRouter, Depends, Request, UploadFile, status
@@ -6,8 +7,9 @@ from fastapi.responses import JSONResponse
 
 from controllers import FileController, ProcessController
 from helpers.config import Settings, get_settings
-from models import ChunkModel, ProjectModel, ResponseMessageEnum
-from models.db_schemas import DataChunk
+from models import AssetModel, ChunkModel, ProjectModel, ResponseMessageEnum
+from models.db_schemas import Asset, DataChunk
+from models.enums import AssetTypeEnum
 
 from .schemas import ProcessRequest
 
@@ -24,7 +26,7 @@ async def upload_data(
     app_settings: Settings = Depends(get_settings),
 ):
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
-    await project_model.get_project_or_create_one(project_id=project_id)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
 
     file_controller = FileController()
     is_valid, message = file_controller.validate_uploaded_file(file)
@@ -48,10 +50,19 @@ async def upload_data(
             content={"message": ResponseMessageEnum.FILE_UPLOAD_FAILED},
         )
 
+    asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
+    asset_resource = Asset(
+        asset_project_id=project.id,
+        asset_type=AssetTypeEnum.FILE.value,
+        asset_name=file_id,
+        asset_size=os.path.getsize(file_path),
+    )
+    asset_record = await asset_model.create_asset(asset=asset_resource)
     return JSONResponse(
         content={
             "message": ResponseMessageEnum.FILE_UPLOAD_SUCCESS.value,
             "file_id": file_id,
+            "asset_id": str(asset_record.id),
         }
     )
 
