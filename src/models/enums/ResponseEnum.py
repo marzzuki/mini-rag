@@ -9,3 +9,5 @@ class ResponseMessageEnum(Enum):
     FILE_UPLOAD_FAILED = "file_upload_failed"
     FILE_PROCESS_FAILED = "file_processing_failed"
     FILE_PROCESS_SUCCESS = "file_processing_success"
+    NO_FILES_ERROR = "no_file_found"
+    FILE_ID_ERROR = "no_file_found_with_this_id"
