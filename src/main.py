@@ -1,11 +1,20 @@
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
+from contextlib import asynccontextmanager
 
 from helpers.config import get_settings
 from routes import base, data
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await startup_db_client()
+    yield
+    await shutdown_db_client()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 async def startup_db_client():
@@ -33,9 +42,6 @@ async def startup_db_client():
 async def shutdown_db_client():
     app.mongo_conn.close()
 
-
-app.router.lifespan.on_startup.append(startup_db_client)
-app.router.lifespan.on_shutdown.append(shutdown_db_client)
 
 app.include_router(base.base_router)
 app.include_router(data.data_router)
