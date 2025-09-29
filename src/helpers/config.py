@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -16,13 +16,17 @@ class Settings(BaseSettings):
     OPEN_API_URL: str
     COHERE_API_KEY: str
 
-    GENERATION_MODEL_ID: str = None
-    EMBEDDING_MODEL_ID: str = None
-    EMBEDDING_MODEL_SIZE: str = None
+    GENERATION_MODEL_ID: str | None = None
+    EMBEDDING_MODEL_ID: str | None = None
+    EMBEDDING_MODEL_SIZE: str | None = None
 
-    INPUT_DEFAULT_MAX_CHARACTERS: str = None
-    GENERATION_DEFAULT_MAX_OUTPUT_TOKENS: str = None
-    GENERATION_DEFAULT_TEMPERATURE: str = None
+    INPUT_DEFAULT_MAX_CHARACTERS: str | None = None
+    GENERATION_DEFAULT_MAX_OUTPUT_TOKENS: str | None = None
+    GENERATION_DEFAULT_TEMPERATURE: str | None = None
+
+    VECTOR_DB_BACKEND: str
+    VECTOR_DB_PATH: str
+    VECTOR_DB_DISTANCE_METHOD: str | None = None
 
     class Config:
         env_file = ".env"
