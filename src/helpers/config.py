@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL_ID: str | None = None
     EMBEDDING_MODEL_SIZE: str | None = None
 
-    INPUT_DEFAULT_MAX_CHARACTERS: str | None = None
-    GENERATION_DEFAULT_MAX_OUTPUT_TOKENS: str | None = None
-    GENERATION_DEFAULT_TEMPERATURE: str | None = None
+    INPUT_DEFAULT_MAX_CHARACTERS: int | None = None
+    GENERATION_DEFAULT_MAX_OUTPUT_TOKENS: int | None = None
+    GENERATION_DEFAULT_TEMPERATURE: float | None = None
 
     VECTOR_DB_BACKEND: str
     VECTOR_DB_PATH: str

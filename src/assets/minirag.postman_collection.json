@@ -42,7 +42,7 @@
 						{
 							"key": "file",
 							"type": "file",
-							"src": "/home/virusminus/Projects/Profile.pdf"
+							"src": "/home/virusminus/Downloads/Mustafa_Marzouk_Resume_.pdf"
 						}
 					]
 				},
@@ -56,6 +56,39 @@
 						"v1",
 						"data",
 						"upload",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Process File",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"file_id\": \"M8xCD9Jw6BoE_Profile.pdf\", \"is_reset\": true}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api}}/api/v1/data/process/1",
+					"host": [
+						"{{api}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"data",
+						"process",
 						"1"
 					]
 				}

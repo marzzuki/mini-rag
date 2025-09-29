@@ -2,7 +2,7 @@ import logging
 
 import cohere
 
-from ..LLMEnums import OpenAIEnums, CoHereEnums, DocumentTypeEnum
+from ..LLMEnums import CoHereEnums, DocumentTypeEnum, OpenAIEnums
 from ..LLMInterface import LLMInterface
 
 
@@ -82,16 +82,16 @@ class CoHereProvider(LLMInterface):
 
     def embed_text(self, text: str, document_type: str = None):
         if not self.client:
-            self.logger.error("OpenAI client was not set")
+            self.logger.error("CoHere client was not set")
             return None
 
         if not self.embedding_model_id:
-            self.logger.error("Embedding model for OpenAI was not set")
+            self.logger.error("Embedding model for CoHere was not set")
             return None
 
-        input_type = CoHereEnums.DOCUMENT
+        input_type = DocumentTypeEnum.DOCUMENT.value
         if document_type == DocumentTypeEnum.QUERY.value:
-            input_type = CoHereEnums.QUERY.value
+            input_type = DocumentTypeEnum.QUERY.value
 
         response = self.client.embed(
             model=self.embedding_model_id,
@@ -100,7 +100,7 @@ class CoHereProvider(LLMInterface):
             embedding_types=["float"],
         )
 
-        if not response or not response.embeddings or not response.floats:
+        if not response or not response.embeddings or not response.embeddings.float:
             self.logger.error("Error while embedding text with OpenAI")
             return None
 

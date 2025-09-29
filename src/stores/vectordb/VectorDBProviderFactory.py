@@ -6,7 +6,7 @@ from .VectorDBEnums import VectorDBEnums
 
 class VectorDBProviderFactory:
     def __init__(self, config) -> None:
-        self.conifg = config
+        self.config = config
         self.base_controller = BaseController()
 
     def create(self, provider: str):
