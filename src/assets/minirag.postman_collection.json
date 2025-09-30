@@ -94,6 +94,114 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "NLP Index Push",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"is_reset\": true}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api}}/api/v1/nlp/index/push/1",
+					"host": [
+						"{{api}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nlp",
+						"index",
+						"push",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "NLP Index Info",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"is_reset\": true}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api}}/api/v1/nlp/index/info/1",
+					"host": [
+						"{{api}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nlp",
+						"index",
+						"info",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "NLP Index Search",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"text\": \"Did Mustafa work as an data analyst?\", \"limit\": 5}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api}}/api/v1/nlp/index/search/1",
+					"host": [
+						"{{api}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nlp",
+						"index",
+						"search",
+						"1"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"event": [
