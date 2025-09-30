@@ -15,12 +15,12 @@ class OpenAIEnums(Enum):
 class CoHereEnums(Enum):
     SYSTEM = "SYSTEM"
     USER = "USER"
-    ASSISTANT = "ASSISTANT"
+    ASSISTANT = "CHATBOT"
 
     DOCUMENT = "search_document"
-    QUERY = "query"
+    QUERY = "search_query"
 
 
 class DocumentTypeEnum(Enum):
-    DOCUMENT = "search_document"
-    QUERY = "search_query"
+    DOCUMENT = "document"
+    QUERY = "query"

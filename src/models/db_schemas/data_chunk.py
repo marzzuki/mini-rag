@@ -26,3 +26,8 @@ class DataChunk(BaseModel):
         arbitrary_types_allowed=True,
         populate_by_name=True,
     )
+
+
+class RetrievedDocument(BaseModel):
+    text: str
+    score: float
