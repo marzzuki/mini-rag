@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timezone
 
 import aiofiles
 from fastapi import APIRouter, Depends, Request, UploadFile, status
@@ -26,7 +27,7 @@ data_router = APIRouter(prefix="/api/v1/data", tags=["api_v1", "data"])
 @data_router.post("/upload/{project_id}")
 async def upload_data(
     request: Request,
-    project_id: str,
+    project_id: int,
     file: UploadFile,
     app_settings: Settings = Depends(get_settings),
 ):
@@ -56,11 +57,18 @@ async def upload_data(
         )
 
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
+    asset_timestamp = datetime.now(timezone.utc)
+
     asset_resource = Asset(
         asset_project_id=project.id,
         asset_type=AssetTypeEnum.FILE.value,
         asset_name=file_id,
         asset_size=os.path.getsize(file_path),
+        asset_config={
+            "original_filename": file.filename,
+            "content_type": file.content_type,
+        },
+        updated_at=asset_timestamp,
     )
     asset_record = await asset_model.create_asset(asset=asset_resource)
     return JSONResponse(
@@ -74,7 +82,7 @@ async def upload_data(
 
 @data_router.post("/process/{project_id}")
 async def process_endpoint(
-    request: Request, project_id: str, process_request: ProcessRequest
+    request: Request, project_id: int, process_request: ProcessRequest
 ):
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
@@ -136,13 +144,16 @@ async def process_endpoint(
                 content={"message": ResponseMessageEnum.FILE_PROCESS_FAILED.value},
             )
 
+        chunk_timestamp = datetime.now(timezone.utc)
+
         file_chunks_records = [
             DataChunk(
                 chunk_text=chunk.page_content,
-                chunk_metadata=chunk.metadata,
+                chunk_metadata=chunk.metadata or {},
                 chunk_order=i + 1,
                 chunk_project_id=project.id,
                 chunk_asset_id=asset_id,
+                updated_at=chunk_timestamp,
             )
             for i, chunk in enumerate(file_chunks)
         ]

@@ -1,2 +1,3 @@
 mongodb
+pgvector_data
 .env
