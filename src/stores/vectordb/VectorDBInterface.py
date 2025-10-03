@@ -5,7 +5,7 @@ from models.db_schemas import RetrievedDocument
 
 class VectorDBInterface(ABC):
     @abstractmethod
-    def connect(self):
+    async def connect(self):
         pass
 
     @abstractmethod
@@ -30,7 +30,7 @@ class VectorDBInterface(ABC):
 
     @abstractmethod
     def create_collection(
-        self, collection_name: str, embedding_size: int, do_reset: bool = False
+        self, collection_name: str, embedding_size: int, is_reset: bool = False
     ):
         pass
 

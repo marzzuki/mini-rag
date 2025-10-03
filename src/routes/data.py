@@ -6,7 +6,7 @@ import aiofiles
 from fastapi import APIRouter, Depends, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 
-from controllers import FileController, ProcessController
+from controllers import FileController, NLPController, ProcessController
 from helpers.config import Settings, get_settings
 from models import (
     AssetModel,
@@ -90,6 +90,14 @@ async def process_endpoint(
 
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+    )
+
     chunk_model = await ChunkModel.create_instance(db_client=request.app.db_client)
 
     process_controller = ProcessController(project_id=project_id)
@@ -124,6 +132,11 @@ async def process_endpoint(
     processed_files = 0
 
     if is_reset:
+        collection_name = nlp_controller.create_collection_name(
+            project_id=project.project_id
+        )
+        _ = await request.app.vectordb_client.delete_collection(collection_name)
+
         await chunk_model.delete_chunks_by_project_id(project_id=project.id)
 
     for asset_id, file_id in project_file_ids.items():
