@@ -9,6 +9,7 @@ from routes import base, data, nlp
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
+from utils.metrics import setup_metrics
 
 
 @asynccontextmanager
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+setup_metrics(app)
 
 
 async def startup_span():
@@ -33,7 +35,9 @@ async def startup_span():
     )
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vectordb_provider_factory = VectorDBProviderFactory(settings, db_client=app.db_client)
+    vectordb_provider_factory = VectorDBProviderFactory(
+        settings, db_client=app.db_client
+    )
 
     app.generation_client = llm_provider_factory.create(
         provider=settings.GENERATION_BACKEND

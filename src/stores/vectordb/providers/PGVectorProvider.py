@@ -3,6 +3,7 @@ import json
 import logging
 
 from sqlalchemy.sql import text as sql_text
+from sqlalchemy.exc import IntegrityError
 
 from models.db_schemas import RetrievedDocument
 
@@ -41,9 +42,16 @@ class PGVectorProvider(VectorDBInterface):
 
     async def connect(self):
         async with self.db_client() as session:
-            async with session.begin():
+            try:
                 await session.execute(sql_text("CREATE EXTENSION IF NOT EXISTS vector"))
-            await session.commit()
+                await session.commit()
+            except IntegrityError as exc:
+                await session.rollback()
+                error_msg = str(exc).lower()
+                if "pg_extension_name_index" in error_msg or "duplicate key value" in error_msg:
+                    self.logger.info("pgvector extension already installed; skipping creation")
+                else:
+                    raise
 
     def disconnect(self):
         pass
