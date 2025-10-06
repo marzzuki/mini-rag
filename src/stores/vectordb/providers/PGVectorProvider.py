@@ -2,8 +2,8 @@ import asyncio
 import json
 import logging
 
-from sqlalchemy.sql import text as sql_text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text as sql_text
 
 from models.db_schemas import RetrievedDocument
 
@@ -48,8 +48,13 @@ class PGVectorProvider(VectorDBInterface):
             except IntegrityError as exc:
                 await session.rollback()
                 error_msg = str(exc).lower()
-                if "pg_extension_name_index" in error_msg or "duplicate key value" in error_msg:
-                    self.logger.info("pgvector extension already installed; skipping creation")
+                if (
+                    "pg_extension_name_index" in error_msg
+                    or "duplicate key value" in error_msg
+                ):
+                    self.logger.info(
+                        "pgvector extension already installed; skipping creation"
+                    )
                 else:
                     raise
 

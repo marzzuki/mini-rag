@@ -1,1 +1,1 @@
-from .mail_service import task_send_reports
+from .file_processing import task_process_project_files
