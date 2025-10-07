@@ -16,6 +16,7 @@ from models import (
 from models.db_schemas import Asset
 from models.enums import AssetTypeEnum
 from tasks.file_processing import task_process_project_files
+from tasks.process_workflow import process_and_push_workflow
 
 from .schemas import ProcessRequest
 
@@ -100,5 +101,29 @@ async def process_endpoint(
         content={
             "message": ResponseMessageEnum.FILE_PROCESS_SUCCESS.value,
             "task_id": task.id,
+        },
+    )
+
+
+@data_router.post("/process-and-push/{project_id}")
+async def process_and_push_endpoint(
+    request: Request, project_id: int, process_request: ProcessRequest
+):
+    chunk_size = process_request.chunk_size
+    overlap_size = process_request.overlap_size
+    is_reset = process_request.is_reset
+
+    workflow = process_and_push_workflow.delay(
+        project_id=project_id,
+        chunk_size=chunk_size,
+        file_id=process_request.file_id,
+        overlap_size=overlap_size,
+        is_reset=is_reset,
+    )
+
+    return JSONResponse(
+        content={
+            "message": ResponseMessageEnum.PROCESS_AND_PUSH_WORKFLOW_READY.value,
+            "workflow_id": workflow.id,
         },
     )

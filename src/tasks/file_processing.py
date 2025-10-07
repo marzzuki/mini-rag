@@ -30,7 +30,7 @@ def task_process_project_files(
     overlap_size: int,
     is_reset: bool,
 ):
-    asyncio.run(
+    return asyncio.run(
         _process_project_files(
             self,
             project_id=project_id,
@@ -179,6 +179,8 @@ async def _process_project_files(
         return {
             "total_chunks": total_chunks,
             "processed_files": processed_files,
+            "project_id": project_id,
+            "is_reset": is_reset,
             "message": ResponseMessageEnum.FILE_PROCESS_SUCCESS.value,
         }
 

@@ -19,3 +19,4 @@ class ResponseMessageEnum(Enum):
     VECTORDB_SEARCH_SUCCESS = "vectordb_search_success"
     RAG_SEARCH_ERROR = "rag_search_error"
     RAG_SEARCH_SUCCESS = "rag_search_success"
+    PROCESS_AND_PUSH_WORKFLOW_READY = "process_and_push_workflow_ready"

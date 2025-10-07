@@ -63,6 +63,8 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "tasks.file_processing",
+        "tasks.data_indexing",
+        "tasks.process_workflow",
     ],
 )
 
@@ -87,6 +89,10 @@ celery_app.conf.update(
     worker_cancel_long_running_tasks_on_connection_loss=True,
     task_routes={
         "tasks.file_processing.process_project_files": {"queue": "file_processing"},
+        "tasks.data_indexing.task_index_project": {"queue": "index_project"},
+        "tasks.process_workflow.process_and_push_workflow": {
+            "queue": "process_push_workflow"
+        },
     },
 )
 
