@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text as sql_text
 
 from models.db_schemas import RetrievedDocument
@@ -43,20 +42,20 @@ class PGVectorProvider(VectorDBInterface):
     async def connect(self):
         async with self.db_client() as session:
             try:
-                await session.execute(sql_text("CREATE EXTENSION IF NOT EXISTS vector"))
-                await session.commit()
-            except IntegrityError as exc:
+                # Check if vector extension already exists
+                result = await session.execute(
+                    sql_text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
+                )
+                extension_exists = result.scalar_one_or_none()
+
+                if not extension_exists:
+                    # Only create if it doesn't exist
+                    await session.execute(sql_text("CREATE EXTENSION vector"))
+                    await session.commit()
+            except Exception as e:
+                # If extension already exists or any other error, just log and continue
+                self.logger.warning(f"Vector extension setup: {str(e)}")
                 await session.rollback()
-                error_msg = str(exc).lower()
-                if (
-                    "pg_extension_name_index" in error_msg
-                    or "duplicate key value" in error_msg
-                ):
-                    self.logger.info(
-                        "pgvector extension already installed; skipping creation"
-                    )
-                else:
-                    raise
 
     def disconnect(self):
         pass
@@ -154,9 +153,12 @@ class PGVectorProvider(VectorDBInterface):
             return True
         return False
 
-    async def _do_create_collection_table(self, collection_name: str, embedding_size: int):
+    async def _do_create_collection_table(
+        self, collection_name: str, embedding_size: int
+    ):
         async with self.db_client() as session:
             async with session.begin():
+
                 def quote_identifier(identifier):
                     return '"' + identifier.replace('"', '""') + '"'
 
