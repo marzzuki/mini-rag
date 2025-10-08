@@ -102,24 +102,20 @@ class PGVectorProvider(VectorDBInterface):
                 """
                 )
 
+                table_info = await session.execute(
+                    table_info_sql, {"collection_name": collection_name}
+                )
+                table_data = table_info.fetchone()
+
+                if not table_data:
+                    return None  # Return None if the table does not exist
+
                 # Properly quote the table name for PostgreSQL
                 def quote_identifier(identifier):
                     return '"' + identifier.replace('"', '""') + '"'
 
                 table_name_quoted = quote_identifier(collection_name)
                 count_sql = sql_text(f"SELECT COUNT(*) FROM {table_name_quoted}")
-
-                table_info = await session.execute(
-                    table_info_sql, {"collection_name": collection_name}
-                )
-                record_count_result = await session.execute(count_sql)
-                record_count = (
-                    record_count_result.scalar() if record_count_result else None
-                )
-
-                table_data = table_info.fetchone()
-                if not table_data:
-                    return None
 
                 return {
                     "table_data": dict(table_data._mapping),
@@ -149,29 +145,34 @@ class PGVectorProvider(VectorDBInterface):
     ):
         if is_reset:
             _ = await self.delete_collection(collection_name)
-
-        if not await self.is_collection_exist(collection_name):
-            async with self.db_client() as session:
-                async with session.begin():
-
-                    def quote_identifier(identifier):
-                        return '"' + identifier.replace('"', '""') + '"'
-
-                    table_name_quoted = quote_identifier(collection_name)
-                    create_sql = sql_text(
-                        f"CREATE TABLE {table_name_quoted} ("
-                        f"{PgVectorTableSchemaEnums.ID.value} bigserial PRIMARY KEY,"
-                        f"{PgVectorTableSchemaEnums.TEXT.value} text,"
-                        f"{PgVectorTableSchemaEnums.VECTOR.value} vector({embedding_size}),"
-                        f"{PgVectorTableSchemaEnums.METADATA.value} jsonb DEFAULT '{{}}',"
-                        f"{PgVectorTableSchemaEnums.CHUNK_ID.value} integer,"
-                        f"FOREIGN KEY ({PgVectorTableSchemaEnums.CHUNK_ID.value}) REFERENCES chunks(id)"
-                        ")"
-                    )
-                    await session.execute(create_sql)
-                    await session.commit()
+            # After deletion, always attempt to recreate to ensure a fresh, empty table
+            await self._do_create_collection_table(collection_name, embedding_size)
+            return True
+        elif not await self.is_collection_exist(collection_name):
+            # If not reset and collection doesn't exist, create it
+            await self._do_create_collection_table(collection_name, embedding_size)
             return True
         return False
+
+    async def _do_create_collection_table(self, collection_name: str, embedding_size: int):
+        async with self.db_client() as session:
+            async with session.begin():
+                def quote_identifier(identifier):
+                    return '"' + identifier.replace('"', '""') + '"'
+
+                table_name_quoted = quote_identifier(collection_name)
+                create_sql = sql_text(
+                    f"CREATE TABLE {table_name_quoted} ("
+                    f"{PgVectorTableSchemaEnums.ID.value} bigserial PRIMARY KEY,"
+                    f"{PgVectorTableSchemaEnums.TEXT.value} text,"
+                    f"{PgVectorTableSchemaEnums.VECTOR.value} vector({embedding_size}),"
+                    f"{PgVectorTableSchemaEnums.METADATA.value} jsonb DEFAULT '{{}}',"
+                    f"{PgVectorTableSchemaEnums.CHUNK_ID.value} integer,"
+                    f"FOREIGN KEY ({PgVectorTableSchemaEnums.CHUNK_ID.value}) REFERENCES chunks(id)"
+                    ")"
+                )
+                await session.execute(create_sql)
+                await session.commit()
 
     async def is_index_existed(self, collection_name: str) -> bool:
         index_name = self.default_index_name(collection_name)

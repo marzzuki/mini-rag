@@ -1,8 +1,9 @@
 import datetime
 import hashlib
 import json
+from datetime import timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from models.db_schemas.minirag.schemas.celery_task import CeleryTask
 
@@ -47,7 +48,11 @@ class IdempotencyManager:
             await session.close()
 
     async def update_task_status(
-        self, task_id: int, status: str, result: dict = None, celery_task_id: str | None = None
+        self,
+        task_id: int,
+        status: str,
+        result: dict = None,
+        celery_task_id: str | None = None,
     ):
         """Update task status and result."""
         session = self.db_client()
@@ -60,9 +65,9 @@ class IdempotencyManager:
                 if celery_task_id:
                     task_record.task_id = celery_task_id
                 if status == "STARTED":
-                    task_record.started_at = datetime.datetime.now(datetime.UTC)
+                    task_record.started_at = datetime.datetime.now(datetime.timezone.utc)
                 if status in ["SUCCESS", "FAILURE"]:
-                    task_record.completed_at = datetime.datetime.now(datetime.UTC)
+                    task_record.completed_at = datetime.datetime.now(datetime.timezone.utc)
                 await session.commit()
         finally:
             await session.close()
@@ -112,12 +117,37 @@ class IdempotencyManager:
         if existing_task.status in ["PENDING", "STARTED", "RETRY"]:
             if existing_task.started_at:
                 time_elapsed = (
-                    datetime.datetime.now(datetime.UTC) - existing_task.started_at
+                    datetime.datetime.now(datetime.timezone.utc) - existing_task.started_at
                 ).total_seconds()
                 time_gap = 60  # 60 seconds grace period
                 if time_elapsed > (task_time_limit + time_gap):
                     return True, existing_task  # Task is stuck, allow re-execution
+
             return False, existing_task  # Task is still running within time limit
 
         # Re-execute if previous task failed
         return True, existing_task
+
+    async def cleanup_old_tasks(self, time_retention: int = 86400) -> int:
+        """
+        Delete old task records older than time_retention seconds.
+        Args:
+            time_retention: Time in seconds to retain tasks (default: 86400 = 24 hours)
+        Returns:
+            Number of deleted records
+        """
+
+        cuttof_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            seconds=time_retention
+        )
+
+        session = self.db_client()
+
+        try:
+            stmt = delete(CeleryTask).where(CeleryTask.created_at < cuttof_time)
+
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount
+        finally:
+            await session.close()
