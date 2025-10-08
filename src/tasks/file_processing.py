@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from celery_app import celery_app, get_startup_setup
 from controllers import NLPController, ProcessController
+from helpers.config import get_settings
 from models import (
     AssetModel,
     ChunkModel,
@@ -12,6 +13,7 @@ from models import (
 )
 from models.db_schemas import DataChunk
 from models.enums import AssetTypeEnum
+from utils.idempotency_manager import IdempotencyManager
 
 logger = logging.getLogger("celery.task")
 
@@ -63,6 +65,53 @@ async def _process_project_files(
             vectordb_client,
             template_parser,
         ) = await get_startup_setup()
+
+        idempotency_manager = IdempotencyManager(db_client, db_engine)
+        task_args = {
+            "project_id": project_id,
+            "file_id": file_id,
+            "chunk_size": chunk_size,
+            "overlap_size": overlap_size,
+            "is_reset": is_reset,
+        }
+
+        task_name = "tasks.file_processing.process_project_files"
+
+        settings = get_settings()
+
+        # Check if task should execute (600 seconds = 10 minutes timeout)
+        should_execute, existing_task = await idempotency_manager.should_execute_task(
+            task_name=task_name,
+            task_args=task_args,
+            celery_task_id=task_instance.request.id,
+            task_time_limit=settings.CELERY_TASK_TIME_LIMIT,
+        )
+
+        if not should_execute:
+            logger.warning(f"Can not handle th task | status: {existing_task.status}")
+            return existing_task.result
+
+        task_record = None
+        if existing_task:
+            # Update existing task with new celery task ID
+            await idempotency_manager.update_task_status(
+                task_id=existing_task.id,
+                status="PENDING",
+                celery_task_id=task_instance.request.id,
+            )
+            task_record = existing_task
+        else:
+            # Create new task record
+            task_record = await idempotency_manager.create_task_record(
+                task_name=task_name,
+                task_args=task_args,
+                celery_task_id=task_instance.request.id,
+            )
+
+        # Update status to STARTED
+        await idempotency_manager.update_task_status(
+            task_id=task_record.id, status="STARTED"
+        )
 
         project_model = await ProjectModel.create_instance(db_client=db_client)
         project = await project_model.get_project_or_create_one(project_id=project_id)
@@ -116,6 +165,13 @@ async def _process_project_files(
                     "message": ResponseMessageEnum.NO_FILES_ERROR.value,
                 },
             )
+            # Update task status to FAILURE
+            await idempotency_manager.update_task_status(
+                task_id=task_record.id,
+                status="FAILURE",
+                result={"message": ResponseMessageEnum.FILE_ID_ERROR.value},
+            )
+
             raise Exception(
                 f"No Project file ids Found for project_file_ids: {project_file_ids}"
             )
@@ -174,6 +230,11 @@ async def _process_project_files(
             meta={
                 "message": ResponseMessageEnum.FILE_PROCESS_SUCCESS.value,
             },
+        )
+        await idempotency_manager.update_task_status(
+            task_id=task_record.id,
+            status="SUCCESS",
+            result={"message": ResponseMessageEnum.FILE_PROCESS_SUCCESS.value},
         )
 
         return {
